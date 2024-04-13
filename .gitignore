@@ -1,0 +1,34 @@
+# Generated files
+Makefile
+Makefile.*
+CMakeLists.txt.user*
+CMakeUserPresets.json
+
+# Build directories
+/*build*/
+**/target/
+/*install*/
+
+*.swp
+
+# Hidden files
+.*/*
+!.github/*
+.DS_Store
+
+# Python venv directories
+env/
+venv/
+
+# Python compile cache
+__pycache__/
+*.pyc
+
+# clangd compile commands file when using -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+compile_commands.json
+
+# Temporary test files
+/test/tmp/
+
+# NPM modules
+node_modules/
