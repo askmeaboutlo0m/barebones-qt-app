@@ -48,9 +48,15 @@ class BarebonesApp final : public QApplication {
 
 int main(int argc, char **argv)
 {
+#ifdef __EMSCRIPTEN__
+    BarebonesApp *app = new BarebonesApp(argc, argv);
+    app->openMainWindow();
+    return 0;
+#else
     BarebonesApp app(argc, argv);
     app.openMainWindow();
     return app.exec();
+#endif
 }
 
 #include <main.moc>

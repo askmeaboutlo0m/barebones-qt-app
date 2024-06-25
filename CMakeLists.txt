@@ -48,3 +48,7 @@ target_link_libraries(barebones PUBLIC
     "Qt${QT_VERSION_MAJOR}::Gui"
     "Qt${QT_VERSION_MAJOR}::Widgets"
 )
+
+if(EMSCRIPTEN)
+    target_link_options(barebones PUBLIC -sASYNCIFY -Os)
+endif()
