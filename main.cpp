@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include <QAction>
 #include <QApplication>
+#include <QComboBox>
+#include <QDockWidget>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
@@ -20,28 +22,98 @@ class BarebonesApp final : public QApplication {
         setApplicationDisplayName(QStringLiteral("Barebones"));
     }
 
-    void openMainWindow()
+    void buildCentralWidget(QMainWindow *mw)
     {
-        QMainWindow *mw = new QMainWindow;
+        QWidget *centralWidget = new QWidget;
+        QVBoxLayout *layout = new QVBoxLayout(centralWidget);
 
+        QLabel *label = new QLabel(QStringLiteral("Hello, Qt!"));
+        layout->addWidget(label);
+
+        QComboBox *combo = new QComboBox;
+        for (int i = 1; i <= 10; ++i) {
+            combo->addItem(QStringLiteral("Option %1").arg(i));
+        }
+        layout->addWidget(combo);
+
+        layout->addStretch();
+        mw->setCentralWidget(centralWidget);
+    }
+
+    void buildDockWidget(QMainWindow *mw, const QString &title,
+                         Qt::DockWidgetArea area)
+    {
+        QDockWidget *dw = new QDockWidget;
+        dw->setWindowTitle(title);
+
+        QLabel *label = new QLabel(title);
+        label->setAlignment(Qt::AlignCenter);
+        label->setWordWrap(true);
+        dw->setWidget(label);
+
+        mw->addDockWidget(area, dw);
+    }
+
+    void addTestActions(QMenu *menu, int depth)
+    {
+        menu->addAction(QStringLiteral("Action"));
+
+        QAction *check1 = menu->addAction(QStringLiteral("Checkable Action 1"));
+        QAction *check2 = menu->addAction(QStringLiteral("Checkable Action 2"));
+        check1->setCheckable(true);
+        check2->setCheckable(true);
+        check1->setChecked(false);
+        check2->setChecked(true);
+
+        for (int i = 1; i < depth; ++i) {
+            QMenu *nestedMenu = menu->addMenu(QStringLiteral("Nested Menu %1").arg(i));
+            addTestActions(nestedMenu, i);
+        }
+    }
+
+    void buildMenuBar(QMainWindow *mw)
+    {
         QMenu *fileMenu = mw->menuBar()->addMenu(QStringLiteral("&File"));
+        addTestActions(fileMenu, 3);
+        fileMenu->addSeparator();
         QAction *quitAction = fileMenu->addAction(QStringLiteral("&Quit"));
         quitAction->setMenuRole(QAction::QuitRole);
         quitAction->setShortcut(QStringLiteral("Ctrl+Q"));
         connect(quitAction, &QAction::triggered, mw, &QMainWindow::close);
 
-        QMenu *helpMenu = mw->menuBar()->addMenu(tr("&Help"));
-        QAction *aboutQtAction = helpMenu->addAction(tr("About &Qt"));
+        QMenu *editMenu = mw->menuBar()->addMenu(QStringLiteral("&Edit"));
+        addTestActions(editMenu, 3);
+
+        QMenu *viewMenu = mw->menuBar()->addMenu(QStringLiteral("&View"));
+        QMenu *docksMenu = viewMenu->addMenu(QStringLiteral("&Docks"));
+        for (QDockWidget *dw : mw->findChildren<QDockWidget *>(
+                 QString(), Qt::FindDirectChildrenOnly)) {
+            docksMenu->addAction(dw->toggleViewAction());
+        }
+        addTestActions(viewMenu, 3);
+
+        QMenu *helpMenu = mw->menuBar()->addMenu(QStringLiteral("&Help"));
+        QAction *aboutQtAction =
+            helpMenu->addAction(QStringLiteral("About &Qt"));
+        aboutQtAction->setShortcut(QStringLiteral("Ctrl+T"));
         aboutQtAction->setMenuRole(QAction::AboutQtRole);
         connect(aboutQtAction, &QAction::triggered, &QApplication::aboutQt);
+        helpMenu->addSeparator();
+        addTestActions(helpMenu, 3);
+    }
 
-        QWidget *centralWidget = new QWidget;
-        QVBoxLayout *layout = new QVBoxLayout(centralWidget);
-        QLabel *label = new QLabel(QStringLiteral("Hello, Qt!"));
-        layout->addWidget(label);
-        layout->addStretch();
-        mw->setCentralWidget(centralWidget);
-
+    void openMainWindow()
+    {
+        QMainWindow *mw = new QMainWindow;
+        mw->setDockOptions(QMainWindow::AnimatedDocks
+                           | QMainWindow::AllowNestedDocks
+                           | QMainWindow::AllowTabbedDocks);
+        buildCentralWidget(mw);
+        buildDockWidget(mw, QStringLiteral("North"), Qt::TopDockWidgetArea);
+        buildDockWidget(mw, QStringLiteral("East"), Qt::RightDockWidgetArea);
+        buildDockWidget(mw, QStringLiteral("South"), Qt::BottomDockWidgetArea);
+        buildDockWidget(mw, QStringLiteral("West"), Qt::LeftDockWidgetArea);
+        buildMenuBar(mw);
         mw->showMaximized();
     }
 };

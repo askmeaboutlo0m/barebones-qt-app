@@ -1,6 +1,6 @@
-Bare-bones Qt application, intended for trying to get Drawpile onto iOS.
+Bare-bones Qt application, intended as a minimal construct for the sake of porting applications and reporting bugs.
 
-Just a bare window with a label and some menu options to test if things work at all. Works on Qt5 and Qt6.
+Contains a main window, menu bar with some nested menus, a combo box, labels and some dock widgets. Works on Qt5 and Qt6.
 
 On Linux, you configure the build via:
 
