@@ -120,6 +120,17 @@ class BarebonesApp final : public QApplication {
 
 int main(int argc, char **argv)
 {
+#ifdef Q_OS_ANDROID
+    // The "native menu bar" on Android is a big, empty bar showing only the
+    // application title, with a button on the right that folds out the "menu
+    // bar" that tries to emulate proper menus. That's a lot of wasted space
+    // for a blank bar, the menu emulation can't do everything the regular Qt
+    // menu bar can do, nested menus get thrown to the other side of the screen
+    // and navigation is very arduous due to slow fade effects that don't
+    // adhere to the system animation scaling speed. This makes the non-native
+    // menu bar the only feasible option for a real application.
+    QApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
+#endif
 #ifdef __EMSCRIPTEN__
     BarebonesApp *app = new BarebonesApp(argc, argv);
     app->openMainWindow();
