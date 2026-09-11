@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QDockWidget>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
@@ -35,6 +36,9 @@ class BarebonesApp final : public QApplication {
             combo->addItem(QStringLiteral("Option %1").arg(i));
         }
         layout->addWidget(combo);
+
+        QLineEdit *lineEdit = new QLineEdit;
+        layout->addWidget(lineEdit);
 
         layout->addStretch();
         mw->setCentralWidget(centralWidget);
