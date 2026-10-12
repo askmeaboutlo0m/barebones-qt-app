@@ -8,8 +8,106 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QOpenGLWidget>
+#include <QQuickView>
 #include <QVBoxLayout>
 #include <QWidget>
+
+class GlRect : public QOpenGLWidget {
+  public:
+    explicit GlRect(QWidget *parent = nullptr) : QOpenGLWidget(parent)
+    {
+    }
+
+    ~GlRect() override
+    {
+        makeCurrent();
+        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        if (m_vbo != 0) {
+            f->glDeleteBuffers(1, &m_vbo);
+        }
+        if (m_program != 0) {
+            f->glDeleteProgram(m_program);
+        }
+        doneCurrent();
+    }
+
+    void initializeGL() override
+    {
+        QOpenGLContext *ctx = QOpenGLContext::currentContext();
+        QOpenGLFunctions *f = ctx->functions();
+
+        const char *vShaderSrc = "#version 100\n"
+                                 "attribute vec3 v_pos;\n"
+                                 "void main() {\n"
+                                 "   gl_Position = vec4(v_pos, 1.0);\n"
+                                 "}\n";
+        GLuint vShader = f->glCreateShader(GL_VERTEX_SHADER);
+        f->glShaderSource(vShader, 1, &vShaderSrc, nullptr);
+        f->glCompileShader(vShader);
+
+        const char *fShaderSrc = "#version 100\n"
+                                 "precision mediump float;\n"
+                                 "void main() {\n"
+                                 "   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                 "}\n";
+        GLuint fShader = f->glCreateShader(GL_FRAGMENT_SHADER);
+        f->glShaderSource(fShader, 1, &fShaderSrc, nullptr);
+        f->glCompileShader(fShader);
+
+        m_program = f->glCreateProgram();
+        f->glAttachShader(m_program, vShader);
+        f->glAttachShader(m_program, fShader);
+
+        f->glBindAttribLocation(m_program, 0, "v_pos");
+        f->glLinkProgram(m_program);
+
+        f->glDeleteShader(vShader);
+        f->glDeleteShader(fShader);
+
+        GLfloat vertices[] = {
+            -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f,
+        };
+
+        f->glGenBuffers(1, &m_vbo);
+        f->glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        f->glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+                        GL_STATIC_DRAW);
+    }
+
+    void resizeGL(int w, int h) override
+    {
+        QOpenGLContext *ctx = QOpenGLContext::currentContext();
+        QOpenGLFunctions *f = ctx->functions();
+        f->glViewport(0, 0, w, h);
+    }
+
+    void paintGL() override
+    {
+        QOpenGLContext *ctx = QOpenGLContext::currentContext();
+        QOpenGLFunctions *f = ctx->functions();
+
+        f->glClearColor(0.5f, 0.5f, 1.0f, 1.0f);
+        f->glClear(GL_COLOR_BUFFER_BIT);
+
+        f->glUseProgram(m_program);
+
+        f->glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        f->glEnableVertexAttribArray(0);
+        f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
+                                 reinterpret_cast<void *>(0));
+
+        f->glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        f->glDisableVertexAttribArray(0);
+    }
+
+  private:
+    GLuint m_program = 0;
+    GLuint m_vbo = 0;
+};
 
 class BarebonesApp final : public QApplication {
     Q_OBJECT
@@ -40,7 +138,10 @@ class BarebonesApp final : public QApplication {
         QLineEdit *lineEdit = new QLineEdit;
         layout->addWidget(lineEdit);
 
-        layout->addStretch();
+        GlRect *glRect = new GlRect;
+        glRect->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        layout->addWidget(glRect);
+
         mw->setCentralWidget(centralWidget);
     }
 
@@ -50,10 +151,31 @@ class BarebonesApp final : public QApplication {
         QDockWidget *dw = new QDockWidget;
         dw->setWindowTitle(title);
 
+        QWidget *content = new QWidget;
+        dw->setWidget(content);
+
+        QVBoxLayout *layout = new QVBoxLayout(content);
+
         QLabel *label = new QLabel(title);
         label->setAlignment(Qt::AlignCenter);
-        label->setWordWrap(true);
-        dw->setWidget(label);
+        layout->addWidget(label);
+
+        if (area == Qt::LeftDockWidgetArea) {
+            QLineEdit *lineEdit = new QLineEdit;
+            layout->addWidget(lineEdit);
+            layout->addStretch();
+        }
+        else if (area == Qt::RightDockWidgetArea) {
+            QQuickView *view = new QQuickView;
+            QWidget *container = QWidget::createWindowContainer(view);
+            container->setSizePolicy(QSizePolicy::Expanding,
+                                     QSizePolicy::Expanding);
+            layout->addWidget(container);
+            view->setSource(QUrl(QStringLiteral("qrc:/main.qml")));
+        }
+        else {
+            layout->addStretch();
+        }
 
         mw->addDockWidget(area, dw);
     }
@@ -70,7 +192,8 @@ class BarebonesApp final : public QApplication {
         check2->setChecked(true);
 
         for (int i = 1; i < depth; ++i) {
-            QMenu *nestedMenu = menu->addMenu(QStringLiteral("Nested Menu %1").arg(i));
+            QMenu *nestedMenu =
+                menu->addMenu(QStringLiteral("Nested Menu %1").arg(i));
             addTestActions(nestedMenu, i);
         }
     }
@@ -124,6 +247,7 @@ class BarebonesApp final : public QApplication {
 
 int main(int argc, char **argv)
 {
+    qputenv("QT_QUICK_BACKEND", "software");
 #ifdef Q_OS_ANDROID
     // The "native menu bar" on Android is a big, empty bar showing only the
     // application title, with a button on the right that folds out the "menu

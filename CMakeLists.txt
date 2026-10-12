@@ -23,7 +23,16 @@ else()
     message(FATAL_ERROR "Invalid USE_QT value '${USE_QT}'")
 endif()
 message(STATUS "Using Qt version ${QT_VERSION_MAJOR}")
-find_package("Qt${QT_VERSION_MAJOR}" REQUIRED COMPONENTS Core Gui Sql Widgets)
+find_package("Qt${QT_VERSION_MAJOR}" REQUIRED COMPONENTS
+    Core
+    Gui
+    OpenGLWidgets
+    Qml
+    Quick
+    QuickControls2
+    Sql
+    Widgets
+)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOMOC_PATH_PREFIX ON)
@@ -42,10 +51,14 @@ else()
     qt6_add_executable(barebones WIN32 MACOSX_BUNDLE)
 endif()
 
-target_sources(barebones PRIVATE main.cpp)
+target_sources(barebones PRIVATE main.cpp qml.qrc)
 target_link_libraries(barebones PUBLIC
     "Qt${QT_VERSION_MAJOR}::Core"
     "Qt${QT_VERSION_MAJOR}::Gui"
+    "Qt${QT_VERSION_MAJOR}::OpenGLWidgets"
+    "Qt${QT_VERSION_MAJOR}::Qml"
+    "Qt${QT_VERSION_MAJOR}::Quick"
+    "Qt${QT_VERSION_MAJOR}::QuickControls2"
     "Qt${QT_VERSION_MAJOR}::Widgets"
 )
 
