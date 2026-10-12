@@ -247,7 +247,7 @@ class BarebonesApp final : public QApplication {
 
 int main(int argc, char **argv)
 {
-    qputenv("QT_QUICK_BACKEND", "software");
+    // qputenv("QT_QUICK_BACKEND", "software");
 #ifdef Q_OS_ANDROID
     // The "native menu bar" on Android is a big, empty bar showing only the
     // application title, with a button on the right that folds out the "menu
